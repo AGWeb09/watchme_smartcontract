@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
-
 pragma solidity >=0.7.0 <0.9.0;
 
 contract MiraMe{
-    
     
     // Events
     /*
@@ -35,19 +33,18 @@ contract MiraMe{
     
     
     // Modifiers
-    
-    modifier onlyCreator(uint id, address _creator){
-        require(contentToOwner[id] == _creator, "Only Creator can do this");
+    modifier onlyCreator(uint id){
+        require(contentToOwner[id] == msg.sender, "Only Creator can do this");
         _;
     }
-    
-    modifier onlySponsor(uint id, address _sponsor){
-        require(contentToSponsor[id] == _sponsor, "Only Sponsor can do this");
+
+    modifier onlySponsor(uint id){
+        require(contentToSponsor[id] == msg.sender, "Only Sponsor can do this");
         _;
     }
-    
-    modifier onlyCreatorOrSponsor(uint id, address _creatorOrSponsor){
-        require(contentToOwner[id] == _creatorOrSponsor || contentToSponsor[id] == _creatorOrSponsor, "Only Creator or Sponsor can do this");
+
+    modifier onlyCreatorOrSponsor(uint id){
+        require(contentToOwner[id] == msg.sender || contentToSponsor[id] == msg.sender, "Only Creator or Sponsor can do this");
         _;
     }
     
@@ -61,7 +58,6 @@ contract MiraMe{
     }
     
     // Private functions
-    
     function _createContent(string memory _hash, uint price, address _creator) internal {
         contents.push(Content(_hash, price));
         uint id = contents.length;
@@ -86,8 +82,7 @@ contract MiraMe{
     */ 
     function createContent(string calldata hash, uint price) public {
         require(price > minimumFee, "Price is too low");
-        address owner = msg.sender;
-        _createContent(hash, price, owner);
+        _createContent(hash, price, msg.sender);
     }
     
     /*
@@ -96,7 +91,7 @@ contract MiraMe{
     * At the beginning, the creator IS the sponsor.
     * Check if the given ID exists
     */
-    function changeSponsor(uint id, address newSponsor) public onlySponsor(id, msg.sender){
+    function changeSponsor(uint id, address newSponsor) public onlySponsor(id){
         require(contents.length >= id, "Content does not exists");
         _changeSponsor(id, newSponsor);
     }
@@ -109,10 +104,10 @@ contract MiraMe{
     * Only the sponsor can change the sponsor.
     * At the beginning, the creator IS the sponsor.
     */
-    function changePrice(uint id, uint price) public onlySponsor(id, msg.sender){
-        require(price > minimumFee, "New Price is too low");
-        require(contents.length >= id, "Content does not exists");
-        contents[id].price = price;
+    function changePrice(uint id, uint price) public onlySponsor(id){
+       require(price > minimumFee, "New Price is too low");
+       require(contents[id].price >= 0, "Content does not exists");
+       contents[id].price = price;
     }
     
     /*
@@ -126,11 +121,11 @@ contract MiraMe{
         uint sponsorFee = msg.value * sponsorPercentageOnSell / 100;
         uint platformFee = msg.value - creatorFee - sponsorFee;
         
+        contentToSponsor[_id] = msg.sender;
+
         payable(contentToOwner[_id]).transfer(creatorFee);
         payable(contentToSponsor[_id]).transfer(sponsorFee);
         payable(platform).transfer(platformFee);
-        
-        contentToSponsor[_id] = msg.sender;
     }
     
     /*
@@ -161,17 +156,10 @@ contract MiraMe{
     /*
     * Changes the minimum fee to operate.
     */
-    function changeMinimumFee(uint _minimumFee) public onlyPlatform{
+    function changeMinimumFee(uint _minimumFee) public onlyPlatform {
         minimumFee = _minimumFee;
     }
-    
-    /*
-    * Gives back how many is stored in the contract.
-    */
-    function getValuesStored() public view onlyPlatform returns(uint){
-        return address(this).balance;
-    } 
-    
+
     /*
     * Get back all the money forom the contract.
     */
@@ -179,8 +167,5 @@ contract MiraMe{
         payable(platform).transfer(address(this).balance);
     }
     
-    receive() external payable {
-        payable(platform).transfer(msg.value);
-    }
     
 }
