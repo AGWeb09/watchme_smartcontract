@@ -97,7 +97,7 @@ contract MiraMe{
     * Check if the given ID exists
     */
     function changeSponsor(uint id, address newSponsor) public onlySponsor(id, msg.sender){
-        require(contents.length > id, "Content does not exists");
+        require(contents.length >= id, "Content does not exists");
         _changeSponsor(id, newSponsor);
     }
     
@@ -111,7 +111,7 @@ contract MiraMe{
     */
     function changePrice(uint id, uint price) public onlySponsor(id, msg.sender){
         require(price > minimumFee, "New Price is too low");
-        require(contents.length > id, "Content does not exists");
+        require(contents.length >= id, "Content does not exists");
         contents[id].price = price;
     }
     
