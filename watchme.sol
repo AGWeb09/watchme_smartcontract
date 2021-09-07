@@ -93,9 +93,11 @@ contract MiraMe{
     /*
     * Changes the sponsor of the Content
     * Only the sponsor can change the sponsor. 
-    * At the beginning, the creator IS the sponsor. 
+    * At the beginning, the creator IS the sponsor.
+    * Check if the given ID exists
     */
     function changeSponsor(uint id, address newSponsor) public onlySponsor(id, msg.sender){
+        require(contents.length > id, "Content does not exists");
         _changeSponsor(id, newSponsor);
     }
     
@@ -103,11 +105,13 @@ contract MiraMe{
     * Changes the price of the content.
     * Price has to be higher than minimuFee saved in the contract.
     * Price has to be in Wei.
+    * Check if the given ID exists
     * Only the sponsor can change the sponsor.
     * At the beginning, the creator IS the sponsor.
     */
     function changePrice(uint id, uint price) public onlySponsor(id, msg.sender){
         require(price > minimumFee, "New Price is too low");
+        require(contents.length > id, "Content does not exists");
         contents[id].price = price;
     }
     
@@ -115,7 +119,9 @@ contract MiraMe{
     * Buy the Content, providing the value in wei.
     */
     function buyContent(uint _id) public payable {
-        require(contents[_id].price >= msg.value, "Your offer is below price");
+        require(contents.length >= _id, "Content does not exists");
+        require(contents[_id].price <= msg.value, "Your offer is below price");
+        require(contentToSponsor[_id] != msg.sender, "This content is already yours!");
         uint creatorFee = msg.value * creatorPercentageOnSell / 100;
         uint sponsorFee = msg.value * sponsorPercentageOnSell / 100;
         uint platformFee = msg.value - creatorFee - sponsorFee;
